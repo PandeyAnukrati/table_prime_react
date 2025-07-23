@@ -1,0 +1,8 @@
+[build]
+  command = "npm run build"
+  publish = "dist"  # Change to "build" if you're using Create React App
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Content-Type = "application/javascript"
