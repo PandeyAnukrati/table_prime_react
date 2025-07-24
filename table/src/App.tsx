@@ -1,3 +1,5 @@
+
+
 import { useState, useEffect } from "react";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
@@ -12,20 +14,27 @@ import "primeflex/primeflex.css";
 import "./index.css";
 import "./App.css";
 
+type Artwork = {
+  id: number;
+  title?: string;
+  place_of_origin?: string;
+  artist_display?: string;
+  date_start?: string | number;
+  date_end?: string | number;
+  [key: string]: any;
+};
+
 function App() {
-  const [artworks, setArtworks] = useState([]); // Current page data
-  const [totalRecords, setTotalRecords] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-
+  const [artworks, setArtworks] = useState<Artwork[]>([]); // Current page data
+  const [totalRecords, setTotalRecords] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
   const pageSize = 10;
+  const [selectedRows, setSelectedRows] = useState<Record<number, Artwork>>({});
+  const [selectCount, setSelectCount] = useState<number | null>(null);
+  const [isSelecting, setIsSelecting] = useState<boolean>(false);
 
-  // Store selected rows across pages
-  const [selectedRows, setSelectedRows] = useState({});
-  const [selectCount, setSelectCount] = useState(null);
-  const [isSelecting, setIsSelecting] = useState(false);
-
-  const fetchArtworks = async (page) => {
+  const fetchArtworks = async (page: number) => {
     setLoading(true);
     try {
       const response = await fetch(
@@ -45,11 +54,11 @@ function App() {
     fetchArtworks(currentPage);
   }, [currentPage]);
 
-  const onPageChange = (e) => {
+  const onPageChange = (e: { page: number }) => {
     setCurrentPage(e.page + 1); // Adjust 0-based index
   };
 
-  const onRowSelectChange = (rowData, selected) => {
+  const onRowSelectChange = (rowData: Artwork, selected: boolean) => {
     const updatedSelections = { ...selectedRows };
     if (selected) {
       updatedSelections[rowData.id] = rowData;
@@ -59,53 +68,44 @@ function App() {
     setSelectedRows(updatedSelections);
   };
 
-  const onSelectAllChange = (event) => {
+  const onSelectAllChange = (event: { checked: boolean }) => {
     const checked = event.checked;
     const updatedSelections = { ...selectedRows };
-
     if (checked) {
-      artworks.forEach((row) => {
+      artworks.forEach((row: Artwork) => {
         updatedSelections[row.id] = row;
       });
     } else {
-      artworks.forEach((row) => {
+      artworks.forEach((row: Artwork) => {
         delete updatedSelections[row.id];
       });
     }
     setSelectedRows(updatedSelections);
   };
 
-  const isRowSelected = (rowData) => !!selectedRows[rowData.id];
-
-  const isPageSelected = () => {
-    return artworks.length > 0 && artworks.every((row) => selectedRows[row.id]);
-  };
+  const isRowSelected = (rowData: Artwork) => !!selectedRows[rowData.id];
 
   // Select N rows globally
-  const selectNRows = async (count) => {
+  const selectNRows = async (count: number | null) => {
     setIsSelecting(true);
     try {
       const updatedSelections = { ...selectedRows };
       let fetched = 0;
       let page = 1;
-
-      while (fetched < count) {
+      while (fetched < (count ?? 0)) {
         const response = await fetch(
           `https://api.artic.edu/api/v1/artworks?page=${page}`
         );
         const data = await response.json();
-
-        data.data.forEach((row) => {
-          if (fetched < count) {
+        (data.data as Artwork[]).forEach((row: Artwork) => {
+          if (fetched < (count ?? 0)) {
             updatedSelections[row.id] = row;
             fetched++;
           }
         });
-
         if (!data.pagination.next_url) break; // No more pages
         page++;
       }
-
       setSelectedRows(updatedSelections);
     } catch (error) {
       console.error("Error selecting rows:", error);
@@ -116,7 +116,6 @@ function App() {
 
   return (
     <div className="app-container">
-      {/* Table Section */}
       <div className="table-container animate-fade-in">
         <div className="table-header">
           <div
@@ -135,14 +134,14 @@ function App() {
               <InputNumber
                 id="selectCount"
                 value={selectCount}
-                onValueChange={(e) => setSelectCount(e.value)}
+                onValueChange={(e) => setSelectCount(e.value ?? null)}
                 placeholder="Enter number"
                 min={1}
                 max={totalRecords}
                 showButtons
                 buttonLayout="horizontal"
                 step={1}
-                size="small"
+                inputStyle={{ width: '6rem' }}
               />
             </div>
             <Button
@@ -175,10 +174,10 @@ function App() {
           scrollable
           scrollHeight="60vh"
           selectionMode="checkbox"
-          selection={Object.values(selectedRows)}
-          onSelectionChange={(e) => {
-            const newSelections = {};
-            e.value.forEach((row) => {
+          selection={Object.values(selectedRows) as Artwork[]}
+          onSelectionChange={(e: { value: Artwork[] }) => {
+            const newSelections: Record<number, Artwork> = {};
+            e.value.forEach((row: Artwork) => {
               newSelections[row.id] = row;
             });
             setSelectedRows(newSelections);
@@ -189,9 +188,7 @@ function App() {
           <Column
             selectionMode="multiple"
             headerStyle={{ width: "3rem" }}
-            headerCheckboxSelected={isPageSelected()}
-            onHeaderCheckboxChange={onSelectAllChange}
-            body={(rowData) => (
+            body={(rowData: Artwork) => (
               <input
                 type="checkbox"
                 className="custom-checkbox"
@@ -204,7 +201,7 @@ function App() {
             field="title"
             header="Title"
             sortable
-            body={(rowData) => (
+            body={(rowData: Artwork) => (
               <div
                 style={{
                   maxWidth: "200px",
@@ -220,12 +217,12 @@ function App() {
           <Column
             field="place_of_origin"
             header="Origin"
-            body={(rowData) => rowData.place_of_origin || "Unknown"}
+            body={(rowData: Artwork) => rowData.place_of_origin || "Unknown"}
           />
           <Column
             field="artist_display"
             header="Artist"
-            body={(rowData) => (
+            body={(rowData: Artwork) => (
               <div
                 style={{
                   maxWidth: "180px",
@@ -241,12 +238,12 @@ function App() {
           <Column
             field="date_start"
             header="Date Start"
-            body={(rowData) => rowData.date_start || "N/A"}
+            body={(rowData: Artwork) => rowData.date_start || "N/A"}
           />
           <Column
             field="date_end"
             header="Date End"
-            body={(rowData) => rowData.date_end || "N/A"}
+            body={(rowData: Artwork) => rowData.date_end || "N/A"}
           />
         </DataTable>
 
