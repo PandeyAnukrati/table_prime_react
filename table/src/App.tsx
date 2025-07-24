@@ -68,20 +68,7 @@ function App() {
     setSelectedRows(updatedSelections);
   };
 
-  const onSelectAllChange = (event: { checked: boolean }) => {
-    const checked = event.checked;
-    const updatedSelections = { ...selectedRows };
-    if (checked) {
-      artworks.forEach((row: Artwork) => {
-        updatedSelections[row.id] = row;
-      });
-    } else {
-      artworks.forEach((row: Artwork) => {
-        delete updatedSelections[row.id];
-      });
-    }
-    setSelectedRows(updatedSelections);
-  };
+
 
   const isRowSelected = (rowData: Artwork) => !!selectedRows[rowData.id];
 
